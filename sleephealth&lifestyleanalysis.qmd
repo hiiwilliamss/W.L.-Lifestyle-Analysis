@@ -1,0 +1,212 @@
+---
+title: "Sleep Health & Lifestyle Analysis"
+author: "William L."
+format: 
+  pdf:
+    self-contained: True
+---
+
+## Background
+
+Sleep health is a critical aspect of overall well-being, influencing both physical and mental health. Adequate sleep is quite essential for cognitive function, emotional regulation, and physical recovery. Various lifestyle factors, such as diet, physical activity, and stress levels, play significant roles in determining sleep quality and duration. Modern lifestyles, characterized by irregular sleep schedules, high stress, and sedentary behavior, often lead to sleep disturbances and disorders. Understanding the relationship between sleep and daily habits is crucial for developing effective interventions to improve sleep health.
+
+## Unloading Packages
+
+```{r}
+library(tidyverse)
+```
+
+## Read File
+
+```{r}
+df <- read.csv("Sleep_health_and_lifestyle_dataset.csv")
+glimpse(df)
+```
+
+## Descriptive Statistics
+
+```{r}
+summary(df)
+```
+
+## Data Cleaning
+
+There are no present NULL values in the following dataset.
+
+```{r echo=T, results="hide"}
+# Checking for NA Values
+# Returns TRUE if there are NA values
+
+is.na(df)
+```
+
+#### Age Grouping
+
+```{r}
+age_group <- function(age) {
+  if (age < 20) {
+    return("Under 20")
+  } else if (age >= 20 & age < 30) {
+    return("20-30")
+  } else if (age >= 30 & age < 40) {
+    return("30-40")
+  } else if (age >= 40 & age < 50) {
+    return("40-50")
+  } else if (age >= 50 & age < 60) {
+    return("50-60")
+  } else if (age >= 60 & age < 70) {
+    return("60-70")
+  } else {
+    return(NA)
+  }
+}
+```
+
+```{r}
+# New Column
+
+df <- df |>
+  mutate(age_group = sapply(Age, age_group))
+
+head(df)
+```
+
+## Average Sleep Duration by Age:
+
+There is a noticeable variation in average sleep duration across different ages. This suggests that sleep patterns might be influenced by age-factors such as lifestyle, work schedules, or health conditions.
+
+#### Trends:
+
+- Ages 20-30: Sleep duration appears to be lower in the 20s, with averages around 6 to 6.7 hours.
+
+- Ages 30-31: A noticeable increase in average sleep duration is observed in the early 30s age, peaking approximately 7.5 hours at age 30 and maintaining above 7 hours at age 31.
+
+- Ages 32-33: After the peak, there is a drop in average sleep duration in the mid-30s, stabilizing around 6.1 to 6.6 hours.
+
+- Ages 34-36: Increase is observed in the mid-30s, with averages around 7.2 to 7.1 hours.
+
+```{r}
+average_sleep_duration <- df |>
+  group_by(Age) |>
+  summarize(
+    count = n(),
+    average_sleep_duration = mean(Sleep.Duration, na.rm = T)
+  ) |>
+  ggplot(aes(x = Age, y = average_sleep_duration, col = Age)) +
+  geom_point() +
+  labs(title = "Average Sleep Duration by Age",
+       x = "Age",
+       y = "Average Sleep Duration (hours)")
+
+average_sleep_duration
+
+```
+
+## Physical Activity vs. Sleep Quality
+
+There is a positive correlation between the quantitative variables. As physical activity levels increase, sleep quality has the tendency to improve.
+
+This suggests that engaging in regular physical activity could be beneficial for enhancing sleep quality.
+
+On the contrary, the data also shows a plateau at higher levels of physical activity, indicating that beyond a certain point, increased activity may not impact the quality of sleep.
+
+```{r}
+ggplot(data = df, aes(x = Physical.Activity.Level, y = Quality.of.Sleep,
+                      col = Quality.of.Sleep)) +
+  geom_point() +
+  labs(title = "Physical Activity vs. Sleep Quality",
+       x = "Level of Physical Activity (minutes/day)",
+       y = "Quality of Sleep (1-10)")
+```
+
+## Indicator Pertaining to Cardiovascular Health
+
+#### Analyzation of Heart Rate Distribution
+
+Upon observation, there is a bell-shaped curvature, indicating that the heart rate distribution follows a pattern. 
+
+The normal heart rate range for adults is approximately 60-100 bpm. Majority of the individuals in the dataset has a heart rate within a healthy range.
+
+```{r}
+ggplot(data = df, aes(x = Heart.Rate)) +
+  geom_histogram(binwidth = 5, fill = "lightblue", color = "black") +
+  labs(title = "Distribution of Heart Rate",
+       x = "Heart Rate (bpm)",
+       y = "Frequency")
+```
+
+#### Analyzation of Heart Rate by Gender
+
+The heart rate distributions for males and females exhibit some variations. Females have the tendency to get a higher average heart rate when under the comparison to males. 
+
+```{r}
+ggplot(data = df, aes(x = Gender, y = Heart.Rate, fill = Gender)) +
+  geom_boxplot(col = "black") +
+  labs(title = "Analyzation of Heart Rate by Gender",
+       x = "Gender Type",
+       y = "Heart Rate (bpm)")
+```
+
+#### Analyzation of Heart Rate by Blood Pressure
+
+The scatter plot indicates that an increase in systolic blood pressure is associated with higher heart rates. Individuals with high diastolic pressure often have high systolic pressure and heart rates. 
+
+- This portrayal is crucial for assessing cardiovascular health
+
+- Upon analyzing the distribution of data points, individuals with high systolic and diastolic pressures along with high heart rates may require closer monitoring and medical intervention
+
+```{r}
+# Separating systolic and diastolic readings
+df <- df |>
+  separate(Blood.Pressure, into = c("systolic", "diastolic"), sep = "/") |>
+  mutate(systolic = as.numeric(systolic),
+         diastolic = as.numeric(diastolic))
+```
+
+```{r}
+ggplot(data = df, aes(x = systolic, y = Heart.Rate, color = diastolic)) +
+  geom_point() +
+  labs(title = "Heart Rate by Systolic Blood Pressure",
+       x = "Systolic Pressure",
+       y = "Heart Rate (bpm)",
+       color = "Dia$stolic Pressure")
+```
+
+## Sleep Disorder Analysis
+
+Upon examining key observations:
+
+- The count of males with insomnia is slightly higher than the count of females
+
+- The count of males without any sleep disorder is significantly higher than the count of females
+
+- The count of females with sleep apnea is much higher than the count of males
+
+This bar plot highlights the differences in the prevalence of sleep disorders between gender.
+
+```{r}
+ggplot(data = df, aes(x = Sleep.Disorder, fill = Gender)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Sleep Disorders by Gender",
+       x = "Sleep Disorder",
+       y = "Count")
+```
+
+## Quality of Sleep by Sleep Disorder
+
+Individuals without any sleep disorders generally have a higher median quality of sleep compared to those with insomnia.
+
+Those with insomnia show a lower and more consistent quality of sleep, with notable outliers indicating some variability.
+
+The quality of sleep for individuals with sleep apnea is comparable to those without sleep disorders but shows a slightly wider range of quality.
+
+This boxplot illustrates a clear visualization of how varying sleep disorders impact the perceived sleep quality. We are shown the significant effect insomnia has on lowering sleep quality, while those with sleep apnea maintain a quality similar to those without any sleep disorder.
+
+```{r}
+ggplot(data = df, aes(x = Sleep.Disorder, y = Quality.of.Sleep)) +
+  geom_boxplot(col = "black", fill = "lightblue") +
+  labs(title = "Quality of Sleep by Sleep Disorder",
+       x = "Sleep Disorder",
+       y = "Quality of Sleep")
+```
+
